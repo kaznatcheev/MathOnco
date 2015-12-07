@@ -1,0 +1,26 @@
+tmax = 100;
+a = 0.2;
+b = 0.2;
+c= 0.2;
+(*e = 0.001;*)
+Manipulate[
+  ton = tcan + tdetect; 
+  toff = ton + tlength; 
+  TreatOn[t] = HeavisideTheta[t - ton] - HeavisideTheta[t - toff]; 
+  solMod = NDSolve[{
+      Derivative[1][pB][t] == (((1 - (2*f)*TreatOn[t])*pB[t])*(1 - pB[t]))*(((1 - pB[t]) - Bone[t] + a*Tumr[t]) - (Bone[t] - pB[t])), 
+      Derivative[1][Bone][t] == (((1 - f*TreatOn[t])*Bone[t])*(1 - Bone[t]))*(pB[t] - (1 - pB[t])), 
+      Derivative[1][Tumr][t] == ((HeavisideTheta[t - tcan]*Tumr[t])*(1 - Tumr[t]))
+        *(((1 - (2*f)*TreatOn[t])*(1 - pTRes[t]))*(b*(1 - pB[t]) + r) + pTRes[t]*((b*(1 - pB[t]))*Bone[t] + r - c)), 
+      Derivative[1][pTRes][t] == (pTRes[t]*(1 - pTRes[t]))*(((2*f)*TreatOn[t])*(b*(1 - pB[t]) + r) - c), 
+      pB[0] == 0.52, Bone[0] == 0.52, Tumr[0] == 0.001, pTRes[0] == pTResIn}, 
+    {pB[t], Bone[t], Tumr[t], pTRes[t]}, {t, 0, tmax}]; 
+  Plot[Evaluate[
+    {pB[t], Bone[t], (1 - pTRes[t])*Tumr[t], pTRes[t]*Tumr[t]} /. solMod], {t, 0, tmax}, 
+    PlotRange -> {{0, tmax}, {0, 1}}], 
+  {{tcan, 20, "Time of onset"}, 1, 100}, 
+  {{tdetect, 13, "Delay until detection"}, 0, 100}, 
+  {{tlength, 35, "Length of treatment"}, 0, 100}, 
+  {{r, 0.4, "Tumour Growth Rate (r)"}, 0, 1}, 
+  {{f, 0.6, "Strength of chemo (f)"}, 0, 1}, 
+  {{pTResIn, 0.02, "Proportion chemo resistant"}, 0, 1}]
