@@ -1,0 +1,69 @@
+ClearAll["Global`*"]
+
+tmax = 700;
+pin = 0.78;
+qin = 0.18;
+
+n = 5;
+bf = 0.5;
+q0 = 0.5;
+sf = 5;
+bm = 0.5;
+p0 = 0.5;
+sm = 5;
+c = 0.3;
+
+
+
+
+(*f = (*(1 -p[t])*n*)q[t]*bf;*)
+Sigmoid[x_, b_, s_, x0_] := b/(1 + Exp[s*(x0 - x)])
+
+f = (*(1 - p[t])**)Sigmoid[q[t], bf, sf, q0];
+(*m= p[t]*bm(*n*);*)
+
+m = Sigmoid[p[t], bm, sm, p0]; (*- Sigmoid[p[t],bm,sm,0.8]*)
+
+G = (1/((1 - p[t])*n))*D[f, q[t]] - c;
+(*Check for existance of G-equilibrium*)
+(*simpG = Simplify[G \[Equal] 0, q[t] \[GreaterEqual]  0 && q[t] \
+\[LessEqual] 1 && p[t] \[GreaterEqual] 0 && p[t] \[LessEqual] 1]*)
+
+
+H = ((1/n)*D[m, p[t]] - (f + q[t]*G));
+(*Check for existance of H-equilibrium*)
+(*simpH = Simplify[H \[Equal] 0, q[t] \[GreaterEqual]  0 && q[t] \
+\[LessEqual] 1 && p[t] \[GreaterEqual] 0 && p[t] \[LessEqual] 1]*)
+
+(*simpGHeq = Simplify[simpH, simpG]*)
+
+(*eqCurve = Solve[Simplify[H \[Equal] G, G \[Equal] 0 &&  q[t] \
+\[GreaterEqual]  0 && q[t] \[LessEqual] 1 && p[t] \[GreaterEqual] 0 && \
+p[t] \[LessEqual] 1], p[t]]*)
+
+solMod = NDSolve[{
+    p'[t] == Simplify[p[t]*(1 - p[t])*H],
+    q'[t] == Simplify[q[t]*(1 - q[t])*G],
+    p[0] == pin, q[0] == qin},
+   {p[t], q[t]}, {t, 0, tmax}
+   ];
+
+(*plot the raw fitness functions*)
+Plot3D[{f, m}, {p[t], 0, 1}, {q[t], 0, 1}, BoxRatios -> {1, 1, 1} , 
+ BoundaryStyle -> Thick, AxesLabel -> Automatic]
+(*plot the derivatives and intersects of fitness functions*)
+Plot3D[Evaluate[{D[f, q[t]], D[m, p[t]], c*n}], {p[t], 0, 1}, {q[t], 
+  0, 1}, BoxRatios -> {1, 1, 1}, BoundaryStyle -> Thick, 
+ AxesLabel -> Automatic]
+(*plot the gain functions and their equilibrium lines*)
+Plot3D[Evaluate[{H, G, 0}], {p[t], 0, 1}, {q[t], 0, 1}, 
+ BoxRatios -> {1, 1, 1}, BoundaryStyle -> Thick, 
+ AxesLabel -> Automatic]
+ContourPlot[{H == 0, G == 0}, {p[t], 0, 1}, {q[t], 0, 1}]
+(*Plot[{eqG,eqH}, {q[t],0,1},PlotRange \[Rule] {{0,1},{0,1}}]*)
+
+(*plot the dynamics*)
+Plot[Evaluate[{p[t], q[t]} /. solMod], {t, 0, tmax}, 
+ PlotRange -> {{0, tmax}, {0, 1}}]
+ParametricPlot[{p[t], q[t]} /. solMod, {t, 0, tmax}, 
+ PlotRange -> {{0, 1}, {0, 1}}, AxesLabel -> {"p", "q"}]
