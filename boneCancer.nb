@@ -1,0 +1,68 @@
+ClearAll["Global`*"]
+
+tmax = 300;
+a = 0.09;
+b = 0.25;
+f = 0;
+r = 0.2;
+
+(*stromaGrowth = 0.165;*)
+stromaDeath = 0.01;
+tumSus = 0.2;
+stromaSus = 0.01;
+ton = 20;
+tlength = 30;
+
+stiffHack = 0.001;
+
+toff = ton + tlength;
+
+TreatOn[t] = HeavisideTheta[t - ton] - HeavisideTheta[t - toff];
+
+(* define all the relevant fitness functions *)
+wB[t] = (1 - 2*f*TreatOn[t]) *((1  - pB[t]) +  a*Tumr[t]) - Bone[t];
+
+wC[t] = (Bone[t]  - pB[t])*(1 - 2*f*TreatOn[t]) ;
+
+wStroma[t] = pB[t]*wB[t] + (1 - pB[t])*wC[t] - stromaDeath + (1 - 2*f*TreatOn[t])*stromaSus  - stromaSus;
+
+(* note that bone is not directly affected by Treatment *)
+wBone[t] = (Stroma[t] + stiffHack)*(pB[t] - (1 - pB[t])) - stiffHack;
+
+rT[t] = b*Stroma[t]*(1 - pB[t])*Bone[t] + tumSus;
+wT[t] = (1 - 2*f*TreatOn[t])*rT[t] - tumSus;
+(* resistant tumour is not affected by Treatment *)
+wTRes[t] = rT[t] - r - tumSus;
+
+wTumr[t] = pTRes[t]*wTRes[t] + (1 - pTRes[t])*wT[t];
+
+(* For simplicity: define the logistic kernel, and the dynamics for logistic growth and replicator on two strategies *)
+LogitKern[inFun_, t] :=  inFun[t]*(1 - inFun[t]);
+LogisticGrowth[popFun_, wFun_, t] := 
+  popFun'[t] == LogitKern[popFun, t]*wFun[t];
+RepDym2[propFun_, wS1_, wS2_, t] := 
+  propFun'[t] == LogitKern[propFun, t]*(wS1[t] - wS2[t]);
+
+(* define the model *)
+boneModel = {
+   (* first the ODES *)
+   RepDym2[pB, wB, wC, t],
+   LogisticGrowth[Stroma, wStroma, t],
+   LogisticGrowth[Bone, wBone, t],
+   (*RepDym2[pTRes,wTRes,wT,t],*)
+   LogisticGrowth[Tumr, wT, t],
+   (* second the initial conditions *)
+   pB[0] == 0.001, Stroma[0] == 0.2,
+   Bone[0] == 0.6, 
+   Tumr[0] == 0.2(*,
+   pTRes[0] == 0 *)
+   };
+
+(* solve the model *)
+solMod = NDSolve[
+  boneModel, {pB[t], Stroma[t], Bone[t], Tumr[t](*, pTRes[t]*)}, 
+  {t, 0, tmax}];
+
+(* plot the model solution *)
+Plot[Evaluate[{Stroma[t], Bone[t], Tumr[t]} /. solMod], {t, 0, tmax}, PlotRange -> {{0, tmax}, {0, 1}}]
+Plot[Evaluate[{pB[t]} /. solMod], {t, 0, tmax}, PlotRange -> {{0, tmax}, {0, 1}}]
