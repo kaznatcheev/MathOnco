@@ -1,0 +1,56 @@
+ClearAll["Global`*"]
+
+(*the payoff functions *)
+v = bv*(1 - p[t])*q[t]*n/((1 - p[t])*n  + 1);
+a = ba*p[t]*n/(n + 1);
+
+GainVD = bv/((1 - p[t])*(n + 1)) - c
+GainG = ba/(n + 1) - q[t] (bv - c)
+
+(*R = ((bv/(n + 1))* (1/(1  - p[t])  - Log[p[t] - 1] + Log[p[t]] ) - \
+c*(Log[p[t]] ));*)
+R = (bv/(n + 1))*(Log[p[t]] - Log[1 - p[t]] + 1/(1 - p[t])) - 
+  c*(Log[p[t]] - Log[1 - p[t]])
+(*S = ((ba/(n + 1) - (bv - c))*Log[q[t]] - ba/(n + 1)*Log[1 - q[t]]);*)
+\
+
+S = (ba/(n + 1))*(Log[q[t]] - Log[1 - q[t]]) + (bv - c)*Log[1 - q[t]]
+
+H =  R - S ;
+
+Simplify[D[H, p[t]] == GainVD/(p[t]*(1 - p[t]))]
+Simplify[-D[H, q[t]] == GainG/(q[t]*(1 - q[t]))]
+
+(*now let's try some concrete numbers and simulate*)
+
+tmax = 700;
+pin = 0.78;
+qin = 0.18;
+
+n = 5;
+bv = 0.5;
+ba = 0.5;
+c = 0.3;
+
+solMod = NDSolve[{
+    p'[t] == Simplify[p[t]*(1 - p[t])*GainG],
+    q'[t] == Simplify[q[t]*(1 - q[t])*GainVD],
+    p[0] == pin, q[0] == qin},
+   {p[t], q[t]}, {t, 0, tmax}
+   ];
+
+(*plot the dynamics*)
+Plot[Evaluate[{p[t], q[t]} /. solMod], {t, 0, tmax}, 
+ PlotRange -> {{0, tmax}, {0, 1}}]
+ParametricPlot[{p[t], q[t]} /. solMod, {t, 0, tmax}, 
+ PlotRange -> {{0, 1}, {0, 1}}, AxesLabel -> {"p", "q"}]
+(*plot the Hamiltonian orbit*)
+hgiv = H /. {p[t] -> pin, q[t] -> qin}
+hmin = FindMinValue[{H, p[t] >= 0, p[t] <= 1, q[t] >= 0, 
+   q[t] <= 1}, {p[t], q[t]}] 
+Manipulate[
+ ContourPlot[H == h, {p[t], 0, 1}, {q[t], 0, 1}, 
+  PlotRange -> {{0, 1}, {0, 1}}, AxesLabel -> {"p", "q"}], {{h, hgiv},
+   hmin, hmin + 10*(hgiv - hmin)}]
+Plot3D[{H, hgiv}, {p[t], 0, 1}, {q[t], 0, 1}, BoxRatios -> {1, 1, 1}, 
+ BoundaryStyle -> Thick, PlotRange -> {hmin, hmin + 10*(hgiv - hmin)}]
