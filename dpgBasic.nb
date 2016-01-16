@@ -41,6 +41,9 @@ H = ((1/n)*D[m, p[t]] - (f + q[t]*G));
 \[GreaterEqual]  0 && q[t] \[LessEqual] 1 && p[t] \[GreaterEqual] 0 && \
 p[t] \[LessEqual] 1], p[t]]*)
 
+StreamPlot[{p[t]*(1 - p[t])*H, q[t]*(1 - q[t]) G}, {p[t], 0, 
+  1}, {q[t], 0, 1}]
+
 solMod = NDSolve[{
     p'[t] == Simplify[p[t]*(1 - p[t])*H],
     q'[t] == Simplify[q[t]*(1 - q[t])*G],
