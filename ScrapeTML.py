@@ -1,6 +1,7 @@
 import FluorescentArea as fa
 import os
 import time
+import numpy as np
 
 def ConvertArchive(root_dir, subdir_match, col_let_array, row_num_array):
     red_list_all = []
