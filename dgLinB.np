@@ -1,0 +1,41 @@
+ClearAll["Global`*"]
+
+(*the payoff functions *)
+GainVD = (1 - p[t]^n)*bv[t]/((1 - p[t])*(n + 1)) - c;
+GainG = ba[t]/(n + 1) - q[t] (bv[t] - c);
+
+(*some concrete numbers for simulation*)
+
+tmax = 20;
+pin = 0.7
+qin = 0.3
+
+tv = 6
+ta = 1
+
+n = 2;
+c = 1;
+
+bvIn = 1.1;
+baIn = 10;
+
+bvDelta = 2;
+baDelta = -11;
+
+bv[t] = bvIn + bvDelta*HeavisideTheta[t - tv] ;
+ba[t] = baIn + baDelta*HeavisideTheta[t - ta];
+
+solMod = NDSolve[{
+    p'[t] == Simplify[p[t]*(1 - p[t])*GainG],
+    q'[t] == Simplify[q[t]*(1 - q[t])*GainVD],
+    p[0] == pin, q[0] == qin},
+   {p[t], q[t]}, {t, 0, tmax}
+   ];
+
+(*plot the dynamics of p,q*)
+Plot[Evaluate[{p[t], q[t]} /. solMod], {t, 0, tmax}, 
+ PlotRange -> {{0, tmax}, {0, 1}}]
+
+(*plot the dynamics of x_G,x_V,x_D*)
+Plot[Evaluate[{p[t], (1 - p[t])*q[t], (1 - p[t])*(1 - q[t])} /. 
+   solMod], {t, 0, tmax}, PlotRange -> {{0, tmax}, {0, 1}}]
