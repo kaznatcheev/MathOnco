@@ -6,36 +6,162 @@ GainG = ba[t]/(n + 1) - q[t] (bv[t] - c);
 
 (*some concrete numbers for simulation*)
 
-tmax = 20;
-pin = 0.7
-qin = 0.3
+tsecond = 1;
+tmax = 3;
 
-tv = 6
-ta = 1
+pin = 0.9
+qin = 0.6
 
-n = 2;
+n = 4;
 c = 1;
 
-bvIn = 1.1;
-baIn = 10;
+(*Set up the four game points*)
+bv00 = 2*c;
+ba00 = 7.5*c*(n + 1);
+bv01 = 7*c;
+ba01 = ba00;
+bv10 = bv00;
+ba10 = 0.5*c*(n + 1);
+bv11 = bv01;
+ba11 = ba10; 
 
-bvDelta = 2;
-baDelta = -11;
+(*Find the location of the 10 internal eq*)
+qcenter = (ba10)/((bv10 - c)*(n + 1))
+pcenter = 
+ x /. FindRoot[(1 - x^(n + 1))*bv10 == c (n + 1)*(1 - x), {x, 
+    1 - bv10/(c*(n + 1))}]
 
-bv[t] = bvIn + bvDelta*HeavisideTheta[t - tv] ;
-ba[t] = baIn + baDelta*HeavisideTheta[t - ta];
+(*Plot the parameter values*)
+dotSize = 0.025
 
+Show[
+ Plot[x - c, {x , c, 2*c (n + 1)}, 
+  PlotRange -> {{c, 2*c (n + 1) - c }, {0, 2*c*n }},
+  GridLines -> {{c*(n + 1)}, {}},
+  PlotStyle -> Black,
+  AspectRatio -> 1,
+  AxesOrigin -> {c, 0},
+  Ticks -> {{c, bv00, c (n + 1), bv11, 2*c (n + 1) - c}, {0, 
+     ba00/(n + 1), c*n, ba11/(n + 1), 2*c*n }}],
+ Graphics[{LightYellow, 
+   Polygon[{{c, 0}, {c (n + 1), 0}, {c (n + 1), c (n + 1) - c}}]}],
+ Graphics[{LightGreen, 
+   Polygon[{{c, 0}, {c, 2*c (n + 1) - c}, {2*c (n + 1), 
+      2*c (n + 1) - c}}]}],
+ Graphics[{LightRed, 
+   Polygon[{{c (n + 1), 0}, {c (n + 1), c (n + 1) - c}, {2*c (n + 1), 
+      2*c (n + 1) - c}, {2*c (n + 1), 0}}]}],
+ Graphics[{Black, PointSize[dotSize], Point[{bv00, ba00/(n + 1)}]}],
+ Graphics[{Green, PointSize[dotSize], Point[{bv01, ba01/(n + 1)}]}],
+ Graphics[{Yellow, PointSize[dotSize], Point[{bv10, ba10/(n + 1)}]}],
+ Graphics[{Red, PointSize[dotSize], Point[{bv11, ba11/(n + 1)}]}]]
+
+(*Solve the dynamics for 10 point*)
+tmax10 = 10*tmax
+
+bv[t] = bv10
+ba[t] = ba10
 solMod = NDSolve[{
+    p'[t] == Simplify[p[t]*(1 - p[t])*GainG],
+    q'[t] == Simplify[q[t]*(1 - q[t])*GainVD],
+    p[0] == pin, q[0] == qin},
+   {p[t], q[t]}, {t, 0, tmax10}
+   ];
+
+Show[ParametricPlot[{p[t], q[t]} /. solMod, {t, 0, tmax10}, 
+  PlotRange -> {{0, 1}, {0, 1}}, AxesLabel -> {"p", "q"}],
+ Graphics[{PointSize[0.01], Point[{pcenter, qcenter}]}]]
+
+(*Plot the a\[Rule]v order*)
+bv[t] = Simplify[bv10 + (bv11 - bv10)*HeavisideTheta[t - tsecond]];
+ba[t] = Simplify[ba10 + (ba11 - ba10)*HeavisideTheta[t - tsecond]];
+
+solMod1 = NDSolve[{
     p'[t] == Simplify[p[t]*(1 - p[t])*GainG],
     q'[t] == Simplify[q[t]*(1 - q[t])*GainVD],
     p[0] == pin, q[0] == qin},
    {p[t], q[t]}, {t, 0, tmax}
    ];
 
-(*plot the dynamics of p,q*)
-Plot[Evaluate[{p[t], q[t]} /. solMod], {t, 0, tmax}, 
- PlotRange -> {{0, tmax}, {0, 1}}]
+(*plot the dynamics of p = x_G,q,x_V,x_D*)
+fig1 = Plot[
+   Evaluate[{p[t], q[t], (1 - p[t])*q[t], (1 - p[t])*(1 - q[t])} /. 
+     solMod1], {t, 0, tmax}, PlotRange -> {{0, tmax}, {0, 1}},
+   GridLines -> {{tsecond}, {}},
+   PlotStyle -> {Green, {Red, Dashed}, Red, Blue},
+   Ticks -> {{0, tsecond, tmax}, {0, qin, pin, 1}}, 
+   AspectRatio -> 1/tmax];
 
-(*plot the dynamics of x_G,x_V,x_D*)
-Plot[Evaluate[{p[t], (1 - p[t])*q[t], (1 - p[t])*(1 - q[t])} /. 
-   solMod], {t, 0, tmax}, PlotRange -> {{0, tmax}, {0, 1}}]
+full1 = Show[
+  fig1,
+  Graphics[{LightYellow, 
+    Polygon[{{0, 0}, {0, 1}, {tsecond, 1}, {tsecond, 0}}]}],
+  Graphics[{LightRed, 
+    Polygon[{{tsecond, 1}, {tsecond, 0}, {tmax, 0}, {tmax, 1}}]}],
+  fig1]
+
+(*Plot the v\[Rule]a order*)
+bv[t] = Simplify[bv01 + (bv11 - bv01)*HeavisideTheta[t - tsecond]];
+ba[t] = Simplify[ba01 + (ba11 - ba01)*HeavisideTheta[t - tsecond]];
+
+solMod2 = NDSolve[{
+    p'[t] == Simplify[p[t]*(1 - p[t])*GainG],
+    q'[t] == Simplify[q[t]*(1 - q[t])*GainVD],
+    p[0] == pin, q[0] == qin},
+   {p[t], q[t]}, {t, 0, tmax}
+   ];
+
+(*plot the dynamics of p = x_G,q,x_V,x_D*)
+fig2 = Plot[
+   Evaluate[{p[t], q[t], (1 - p[t])*q[t], (1 - p[t])*(1 - q[t])} /. 
+     solMod2], {t, 0, tmax}, PlotRange -> {{0, tmax}, {0, 1}},
+   GridLines -> {{tsecond}, {}},
+   PlotStyle -> {Green, {Red, Dashed}, Red, Blue},
+   Ticks -> {{0, tsecond, tmax}, {0, qin, pin, 1}}, 
+   AspectRatio -> 1/tmax];
+
+full2 = Show[
+  fig2,
+  Graphics[{LightGreen, 
+    Polygon[{{0, 0}, {0, 1}, {tsecond, 1}, {tsecond, 0}}]}],
+  Graphics[{LightRed, 
+    Polygon[{{tsecond, 1}, {tsecond, 0}, {tmax, 0}, {tmax, 1}}]}],
+  fig2]
+
+(*Plot the instant double order*)
+bv[t] = bv11;
+ba[t] = ba11;
+
+solMod3 = NDSolve[{
+    p'[t] == Simplify[p[t]*(1 - p[t])*GainG],
+    q'[t] == Simplify[q[t]*(1 - q[t])*GainVD],
+    p[0] == pin, q[0] == qin},
+   {p[t], q[t]}, {t, 0, tmax}
+   ];
+
+(*plot the dynamics of p = x_G,q,x_V,x_D*)
+fig3 = Plot[
+   Evaluate[{p[t], q[t], (1 - p[t])*q[t], (1 - p[t])*(1 - q[t])} /. 
+     solMod3], {t, 0, tmax}, PlotRange -> {{0, tmax}, {0, 1}},
+   GridLines -> {{}, {}},
+   PlotStyle -> {Green, {Red, Dashed}, Red, Blue},
+   Ticks -> {{0, tsecond, tmax}, {0, qin, pin, 1}}, 
+   AspectRatio -> 1/tmax];
+
+full3 = Show[
+  fig3,
+  Graphics[{LightRed, 
+    Polygon[{{0, 0}, {0, 1}, {tsecond, 1}, {tsecond, 0}}]}],
+  Graphics[{LightRed, 
+    Polygon[{{tsecond, 1}, {tsecond, 0}, {tmax, 0}, {tmax, 1}}]}],
+  fig3]
+
+(*Shannon index, base 3*)
+SI3 = -(p[t]*Log[3, p[t]] + (1 - p[t])*q[t]*
+      Log[3, (1 - p[t])*q[t]] + (1 - p[t])*(1 - q[t])*
+      Log[3, (1 - p[t])*(1 - q[t])]);
+
+Plot[Evaluate[{SI3 /. solMod1, SI3 /. solMod2, SI3 /. solMod3}], {t, 
+  0, tmax},
+ PlotRange -> {{0, tmax}, {0, 1}},
+ GridLines -> {{tsecond}, {}}]
