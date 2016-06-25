@@ -1,0 +1,96 @@
+ClearAll["Global`*"]
+
+(*the payoff functions *)
+GainVD = (1 - p[t]^n)*bv/((1 - p[t])*(n + 1)) - c;
+GainG = ba/(n + 1) - q[t]*(bv - c);
+
+(*some concrete numbers for simulation*)
+n = 4;
+c = 1;
+
+(*cyclic dynamics*)
+bv = 2;
+ba = 2.5;
+parVals = {{0.6, 0.5, 27}, {0.5, 0.5, 27}, {0.4, 0.5, 28}, {0.3, 0.5, 
+   30}, {0.2, 0.5, 33}, {0.1, 0.5, 39}, {0.01, 0.5, 60.5}}
+arrowStyle = {0, 0.05}
+
+(*all-VOP dynamics*)
+(*bv  = 7;
+ba = 2.5;
+parVals = {{0.01,0.01, \
+9},{0.05,0.01/0.95,8},{0.1,0.01/0.9,7.3},{0.2,0.01/0.8,6},{0.3,0.01/0.\
+7,5.1},{0.4,0.01/0.6,4.5},{0.5,0.01/0.5,4},{0.6,0.01/0.4,4},{0.7,0.01/\
+0.3,4},{0.8,0.01/0.2,4},{0.9,0.01/0.1,5},{0.95,0.01/0.05,5},{0.99,0.2,\
+ 5}}
+
+arrowStyle = {0,0.05,0}*)
+
+(*all-GLY dynamics*)
+(*bv  = 2;
+ba = 37.5;
+parVals = {{0.01,0.01, 10},{0.01,0.1, 10},{0.01,0.2, 10},{0.01,0.3, \
+10},{0.01,0.4, 10},{0.01,0.5, 10},{0.01,0.6, 10},{0.01,0.7, \
+10},{0.01,0.8, 10},{0.01,0.9, 10},{0.01,0.99, 10}}
+
+arrowStyle = {0,0.05,0}*)
+
+
+
+(*Find the location of the internal eq*)
+qcenter = (ba)/((bv - c)*(n + 1))
+pcenter = 
+ x /. FindRoot[(1 - x^(n + 1))*bv == c (n + 1)*(1 - x), {x, 
+    1 - bv/(c*(n + 1))}]
+
+(*Plot the parameter values*)
+dotSize = 0.025
+
+Show[
+ Plot[x - c, {x , c, 2*c (n + 1)}, 
+  PlotRange -> {{c, 2*c (n + 1) - c }, {0, 2*c*n }},
+  GridLines -> {{c*(n + 1)}, {}},
+  PlotStyle -> Black,
+  AspectRatio -> 1,
+  AxesOrigin -> {c, 0},
+  Ticks -> {{c, bv, c (n + 1), 2*c (n + 1) - c}, {0, ba/(n + 1), c*n, 
+     2*c*n }}],
+ Graphics[{LightYellow, 
+   Polygon[{{c, 0}, {c (n + 1), 0}, {c (n + 1), c (n + 1) - c}}]}],
+ Graphics[{LightGreen, 
+   Polygon[{{c, 0}, {c, 2*c (n + 1) - c}, {2*c (n + 1), 
+      2*c (n + 1) - c}}]}],
+ Graphics[{LightRed, 
+   Polygon[{{c (n + 1), 0}, {c (n + 1), c (n + 1) - c}, {2*c (n + 1), 
+      2*c (n + 1) - c}, {2*c (n + 1), 0}}]}],
+ Graphics[{Black, PointSize[dotSize], Point[{bv, ba/(n + 1)}]}]]
+
+(*Solve the dynamics*)
+numVals = Length[parVals]
+
+Do[solMod[i] = NDSolve[{
+    p'[t] == Simplify[p[t]*(1 - p[t])*GainG],
+    q'[t] == Simplify[q[t]*(1 - q[t])*GainVD],
+    p[0] == parVals[[i, 1]], q[0] == parVals[[i, 2]]},
+   {p[t], q[t]}, {t, 0, parVals[[i, 3]]}
+   ], {i, numVals}]
+
+
+dynamics = {}
+
+Do[dynamics = 
+   Show[dynamics, 
+    ParametricPlot[{(1 - p[t])*(1 - q[t]), p[t]} /. solMod[i], {t, 0, 
+      parVals[[i, 3]]}, PlotRange -> {{0, 1}, {0, 1}}, 
+     PlotStyle -> Arrowheads[arrowStyle]]], {i, numVals}];
+
+triangle = 
+  Show[Graphics[{ White, EdgeForm[Black], 
+     Polygon[{{0, 0}, {0, 1}, {1, 0}}]}], dynamics
+   ];
+
+{error, xf} = 
+  FindGeometricTransform[{{0, 0}, {1, 0}, {1, Tan[Pi/3]}/2}, {{0, 
+     0}, {1, 0}, {0, 1}}];
+
+Graphics[GeometricTransformation[First@triangle, xf] /. Line -> Arrow]
