@@ -13,7 +13,9 @@ Related to the double goods game (public and club good):
 4. [From linear to nonlinear payoffs in the double public goods game](https://egtheory.wordpress.com/2015/11/25/nonlinear-dpg/)
 5. [Don’t treat the player, treat the game: buffer therapy and bevacizumab](https://egtheory.wordpress.com/2016/03/26/game-treatment/)
 6. [Cancer metabolism and voluntary public goods games] (https://egtheory.wordpress.com/2016/04/14/cancer-metabolism-and-voluntary-public-goods-games/) by Robert Vander Velde
- 
+7. [Acidity and vascularization as linear goods in cancer](https://egtheory.wordpress.com/2016/05/16/vpg-cancer/)
+8. [Multiple realizability of replicator dynamics](https://egtheory.wordpress.com/2016/06/09/replicator-dynamics/)
+9. [Hamiltonian systems and closed orbits in replicator dynamics of cancer](https://egtheory.wordpress.com/2016/06/24/cycles/)
 
 Related to the games from time-lapse microscopy project:
 
